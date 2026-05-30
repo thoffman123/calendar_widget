@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.tony.calendar-widget</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Volumes/External_Projects/calendar_widget/generate.sh</string>
+  </array>
+
+  <!-- Run every hour (3600 seconds) -->
+  <key>StartInterval</key>
+  <integer>3600</integer>
+
+  <!-- Also run immediately after being loaded -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Volumes/External_Projects/calendar_widget/logs/launchd.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Volumes/External_Projects/calendar_widget/logs/launchd-error.log</string>
+
+  <!-- Ensure the Calendar app's database is accessible -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>/Users/tony</string>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+</dict>
+</plist>
