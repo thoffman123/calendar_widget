@@ -9,7 +9,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Volumes/External_Projects/calendar_widget/generate.sh</string>
+    <string>{HOME}/Library/Scripts/com.tony.calendar-widget/generate.sh</string>
   </array>
 
   <!-- Run every hour (3600 seconds) -->
@@ -21,16 +21,16 @@
   <true/>
 
   <key>StandardOutPath</key>
-  <string>/Volumes/External_Projects/calendar_widget/logs/launchd.log</string>
+  <string>{HOME}/Library/Logs/com.tony.calendar-widget/launchd.log</string>
 
   <key>StandardErrorPath</key>
-  <string>/Volumes/External_Projects/calendar_widget/logs/launchd-error.log</string>
+  <string>{HOME}/Library/Logs/com.tony.calendar-widget/launchd-error.log</string>
 
   <!-- Ensure the Calendar app's database is accessible -->
   <key>EnvironmentVariables</key>
   <dict>
     <key>HOME</key>
-    <string>/Users/tony</string>
+    <string>{HOME}</string>
     <key>PATH</key>
     <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>

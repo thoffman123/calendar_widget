@@ -18,7 +18,10 @@ WIDGET_DIR="/Volumes/External_Projects/calendar_widget"
 PLIST_SRC="$WIDGET_DIR/com.tony.calendar-widget.plist"
 LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 PLIST_DEST="$LAUNCH_AGENTS/$LABEL.plist"
-LOG="$WIDGET_DIR/logs/generate.log"
+SCRIPT_DIR="$HOME/Library/Scripts/$LABEL"
+DATA_DIR="$HOME/Library/Application Support/$LABEL"
+LOG_DIR="$HOME/Library/Logs/$LABEL"
+LOG="$LOG_DIR/generate.log"
 UBERSICHT_WIDGETS="$HOME/Library/Application Support/Übersicht/widgets"
 WIDGET_DEST="$UBERSICHT_WIDGETS/week-calendar.jsx"
 
@@ -43,13 +46,18 @@ cmd_enable() {
     err "Plist not found: $PLIST_SRC"; exit 1
   fi
 
-  mkdir -p "$LAUNCH_AGENTS"
-  cp "$PLIST_SRC" "$PLIST_DEST"
-  ok "Copied plist → $PLIST_DEST"
+  # Install generate.sh to a local path so launchd can read it
+  # (macOS TCC blocks launchd agents from reading scripts on external volumes)
+  mkdir -p "$SCRIPT_DIR" "$DATA_DIR" "$LOG_DIR" "$LAUNCH_AGENTS"
+  cp "$WIDGET_DIR/generate.sh" "$SCRIPT_DIR/generate.sh"
+  chmod 755 "$SCRIPT_DIR/generate.sh"
+  ok "Installed generate.sh → $SCRIPT_DIR"
+
+  # Substitute {HOME} placeholder in plist before installing
+  sed "s|{HOME}|$HOME|g" "$PLIST_SRC" > "$PLIST_DEST"
+  ok "Installed plist → $PLIST_DEST"
 
   chmod 644 "$PLIST_DEST"
-  mkdir -p "$WIDGET_DIR/logs"
-  chmod +x "$WIDGET_DIR/generate.sh"
 
   # Copy widget file directly — Übersicht cannot follow symlinks across volumes
   if [[ -d "$UBERSICHT_WIDGETS" ]]; then
@@ -120,10 +128,10 @@ cmd_status() {
     echo -e "${RED}no${RESET}"
   fi
 
-  echo "  Data file       : $WIDGET_DIR/week-calendar.json"
-  if [[ -f "$WIDGET_DIR/week-calendar.json" ]]; then
-    UPDATED=$(python3 -c "import json; print(json.load(open('$WIDGET_DIR/week-calendar.json')).get('updated','?'))" 2>/dev/null || echo "?")
-    MOD=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$WIDGET_DIR/week-calendar.json" 2>/dev/null || echo "?")
+  echo "  Data file       : $DATA_DIR/week-calendar.json"
+  if [[ -f "$DATA_DIR/week-calendar.json" ]]; then
+    UPDATED=$(python3 -c "import json; print(json.load(open('$DATA_DIR/week-calendar.json')).get('updated','?'))" 2>/dev/null || echo "?")
+    MOD=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$DATA_DIR/week-calendar.json" 2>/dev/null || echo "?")
     echo "  Last updated    : $UPDATED (file modified $MOD)"
   else
     echo -e "  Data file       : ${RED}missing — run './service.sh run' to generate${RESET}"
@@ -132,7 +140,12 @@ cmd_status() {
 
 cmd_run() {
   echo -e "${BOLD}Running generate.sh now (foreground)…${RESET}"
-  bash "$WIDGET_DIR/generate.sh"
+  if [[ -f "$SCRIPT_DIR/generate.sh" ]]; then
+    bash "$SCRIPT_DIR/generate.sh"
+  else
+    warn "Local script not found — run './service.sh enable' first, or running from project dir…"
+    bash "$WIDGET_DIR/generate.sh"
+  fi
 }
 
 cmd_logs() {

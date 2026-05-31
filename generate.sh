@@ -5,15 +5,14 @@
 # Reads from ALL Apple Calendar calendars; marks Dayforce_barnesnoble events
 # with isDayforce: true. Google Calendar events sync automatically via macOS.
 #
-# Output: /Volumes/External_Projects/calendar_widget/week-calendar.json
+# Output: ~/Library/Application Support/com.tony.calendar-widget/week-calendar.json
 
 set -euo pipefail
 
-WIDGET_DIR="/Volumes/External_Projects/calendar_widget"
-
-OUTPUT="$WIDGET_DIR/week-calendar.json"
-LOG="$WIDGET_DIR/logs/generate.log"
-mkdir -p "$WIDGET_DIR/logs"
+DATA_DIR="$HOME/Library/Application Support/com.tony.calendar-widget"
+OUTPUT="$DATA_DIR/week-calendar.json"
+LOG="$HOME/Library/Logs/com.tony.calendar-widget/generate.log"
+mkdir -p "$DATA_DIR" "$HOME/Library/Logs/com.tony.calendar-widget"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 
@@ -25,8 +24,8 @@ osascript -e 'tell application "Calendar" to launch' 2>/dev/null || true
 sleep 1
 
 RAW=$(osascript <<'APPLESCRIPT'
--- Target only the two calendars we care about to keep this fast
-set TARGET_CALS to {"anthonyhoffman@gmail.com", "Dayforce_barnesnoble"}
+-- Skip system/noise calendars; mark Dayforce_barnesnoble events separately
+set SKIP_CALS to {"Holidays in United States", "Holidays in Canada", "Holidays in China", "US Holidays", "Birthdays", "Siri Suggestions", "Scheduled Reminders"}
 
 tell application "Calendar"
   set now to current date
@@ -40,21 +39,23 @@ tell application "Calendar"
   set seconds of endDate to 59
 
   set output to ""
-  repeat with calName in TARGET_CALS
-    try
-      set cal to calendar calName
+  repeat with cal in every calendar
+    set calName to name of cal
+    if SKIP_CALS does not contain calName then
       set isDFstr to "false"
       if calName is "Dayforce_barnesnoble" then set isDFstr to "true"
-      set allEvents to (every event of cal whose start date >= startDate and start date <= endDate)
-      repeat with e in allEvents
-        set eTitle to summary of e
-        set eStart to start date of e as string
-        set eEnd to end date of e as string
-        set isAllDay to "false"
-        if (allday event of e) then set isAllDay to "true"
-        set output to output & isDFstr & "|||" & isAllDay & "|||" & eTitle & "|||" & eStart & "|||" & eEnd & linefeed
-      end repeat
-    end try
+      try
+        set allEvents to (every event of cal whose start date >= startDate and start date <= endDate)
+        repeat with e in allEvents
+          set eTitle to summary of e
+          set eStart to start date of e as string
+          set eEnd to end date of e as string
+          set isAllDay to "false"
+          if (allday event of e) then set isAllDay to "true"
+          set output to output & isDFstr & "|||" & isAllDay & "|||" & eTitle & "|||" & eStart & "|||" & eEnd & linefeed
+        end repeat
+      end try
+    end if
   end repeat
   return output
 end tell

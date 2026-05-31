@@ -2,9 +2,7 @@
  * Week At A Glance — Übersicht Widget
  */
 
-const DATA_FILE = "/Volumes/External_Projects/calendar_widget/week-calendar.json";
-
-export const command = `cat "${DATA_FILE}" 2>/dev/null || echo '{"events":[],"updated":"—"}'`;
+export const command = `cat "$HOME/Library/Application Support/com.tony.calendar-widget/week-calendar.json" 2>/dev/null || echo '{"events":[],"updated":"—"}'`;
 
 export const refreshFrequency = 5 * 60 * 1000;
 
