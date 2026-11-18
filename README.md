@@ -28,6 +28,15 @@ cp widget.jsx ~/Library/Application\ Support/Übersicht/widgets/week-calendar.js
 
 Then right-click the Übersicht menubar icon → **Refresh All Widgets**.
 
+#### Enable clicking events
+Clicking an event opens it in Calendar.app. For clicks to reach the widget:
+
+- Put the widget on the **foreground layer**: Übersicht menubar icon → **week-calendar** → turn off **Background**. A background-layer widget sits behind the desktop, so the desktop swallows clicks and nothing happens. (The setting is stored as `"inBackground"` in `~/Library/Application Support/tracesOf.Uebersicht/WidgetSettings.json`.)
+- Make sure widget interaction is enabled in Übersicht's preferences.
+- On the first click, macOS asks to let Übersicht control Calendar — click **Allow**.
+
+One-off events open with the event selected. Recurring events (and any event that can't be found) open Calendar's day view on the clicked date.
+
 ### 3. Enable the hourly service
 ```bash
 ./service.sh enable
