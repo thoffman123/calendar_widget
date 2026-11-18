@@ -50,9 +50,10 @@ tell application "Calendar"
           set eTitle to summary of e
           set eStart to start date of e as string
           set eEnd to end date of e as string
+          set eUid to uid of e
           set isAllDay to "false"
           if (allday event of e) then set isAllDay to "true"
-          set output to output & isDFstr & "|||" & isAllDay & "|||" & eTitle & "|||" & eStart & "|||" & eEnd & linefeed
+          set output to output & isDFstr & "|||" & isAllDay & "|||" & eTitle & "|||" & eStart & "|||" & eEnd & "|||" & eUid & "|||" & calName & linefeed
         end repeat
       end try
     end if
@@ -112,7 +113,7 @@ for line in raw.strip().splitlines():
     if not line:
         continue
     parts = line.split('|||')
-    if len(parts) != 5:
+    if len(parts) != 7:
         continue
 
     is_dayforce = parts[0].strip() == 'true'
@@ -120,6 +121,8 @@ for line in raw.strip().splitlines():
     title       = parts[2].strip()
     start_raw   = parts[3].strip()
     end_raw     = parts[4].strip()
+    uid         = parts[5].strip()
+    cal_name    = parts[6].strip()
 
     # Deduplicate by (title, start)
     key = (title, start_raw)
@@ -142,6 +145,8 @@ for line in raw.strip().splitlines():
             'end':   end_str or start_str,
             'allDay': True,
             'isDayforce': is_dayforce,
+            'uid': uid,
+            'calendar': cal_name,
         })
     else:
         try:
@@ -155,6 +160,8 @@ for line in raw.strip().splitlines():
             'end':   end_str,
             'allDay': False,
             'isDayforce': is_dayforce,
+            'uid': uid,
+            'calendar': cal_name,
         })
 
 # Sort: all-day first, then by start time

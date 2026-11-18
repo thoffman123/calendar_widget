@@ -2,6 +2,8 @@
  * Week At A Glance — Übersicht Widget
  */
 
+import { run } from 'uebersicht';
+
 export const command = `cat "$HOME/Library/Application Support/com.tony.calendar-widget/week-calendar.json" 2>/dev/null || echo '{"events":[],"updated":"—"}'`;
 
 export const refreshFrequency = 5 * 60 * 1000;
@@ -30,6 +32,57 @@ function formatTime(dtStr) {
   const ampm = h >= 12 ? 'PM' : 'AM';
   const hh = h % 12 || 12;
   return hh + (m ? ':' + String(m).padStart(2,'0') : '') + ' ' + ampm;
+}
+
+// ── Click → open event in Calendar.app ──────────────────────────────────────
+// Args: calendar name, event uid, year, month, day (of the clicked row).
+// Non-recurring events found by uid are selected with `show`. Recurring
+// events (shared uid across occurrences) and lookups that fail fall back to
+// Calendar's day view on the clicked date.
+const OPEN_EVENT_SCRIPT = [
+  'on run argv',
+  '  set calName to item 1 of argv',
+  '  set eUid to item 2 of argv',
+  '  set dt to current date',
+  '  set day of dt to 1',
+  '  set year of dt to (item 3 of argv) as integer',
+  '  set month of dt to (item 4 of argv) as integer',
+  '  set day of dt to (item 5 of argv) as integer',
+  '  tell application "Calendar"',
+  '    activate',
+  '    set shown to false',
+  '    try',
+  '      set ev to event id eUid of calendar calName',
+  '      set rec to recurrence of ev',
+  '      if rec is missing value or rec is "" then',
+  '        show ev',
+  '        set shown to true',
+  '      end if',
+  '    end try',
+  '    if not shown then',
+  '      switch view to day view',
+  '      view calendar at dt',
+  '    end if',
+  '  end tell',
+  'end run',
+];
+
+const shq = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
+
+// Übersicht can deliver a click twice; ignore repeats within 1.5 s so
+// duplicate AppleScript calls don't queue up in Calendar.
+let lastOpen = { key: '', at: 0 };
+
+function openInCalendar(evt, dayDate) {
+  const key = (evt.uid || evt.title) + '@' + dayDate.toDateString();
+  const now = Date.now();
+  if (key === lastOpen.key && now - lastOpen.at < 1500) return;
+  lastOpen = { key, at: now };
+
+  const cmd = 'osascript ' + OPEN_EVENT_SCRIPT.map(l => '-e ' + shq(l)).join(' ')
+    + ' ' + [evt.calendar || '', evt.uid || '', dayDate.getFullYear(), dayDate.getMonth() + 1, dayDate.getDate()]
+        .map(shq).join(' ');
+  run(cmd).catch((e) => { console.log('openInCalendar failed', e); });
 }
 
 function groupByDay(events, today) {
@@ -107,7 +160,9 @@ export const render = ({ output, error }) => {
           const meta = evt.allDay ? 'All day'
             : (evt.start ? formatTime(evt.start) + (evt.end ? ' – ' + formatTime(evt.end) : '') : '');
           return (
-            <div key={j} style={{display:'flex',alignItems:'flex-start',gap:'6px',marginBottom:'3px'}}>
+            <div key={j} onClick={() => openInCalendar(evt, dayDate)}
+                 title="Open in Calendar"
+                 style={{display:'flex',alignItems:'flex-start',gap:'6px',marginBottom:'3px',cursor:'pointer'}}>
               <div style={{width:'7px',height:'7px',borderRadius:'50%',background:color,flexShrink:0,marginTop:'3px'}} />
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:'600',overflowWrap:'anywhere',color:'rgba(255,255,255,0.9)'}}>
