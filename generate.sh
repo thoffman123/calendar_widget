@@ -72,6 +72,7 @@ fi
 python3 - "$OUTPUT" <<PYEOF
 import sys, json, re
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 output_path = sys.argv[1]
 
@@ -89,10 +90,9 @@ def parse_as_date(s):
     except ValueError:
         dt = datetime.strptime(s, '%B %d, %Y at %I:%M:%S %p')
 
-    # Determine PDT vs PST (rough: Mar–Nov = PDT = -07:00, else PST = -08:00)
-    month = dt.month
-    offset = '-07:00' if 3 <= month <= 11 else '-08:00'
-    return dt.strftime('%Y-%m-%dT%H:%M:%S') + offset
+    # Attach the real Pacific time zone so PDT/PST is correct on every date
+    dt = dt.replace(tzinfo=ZoneInfo('America/Los_Angeles'))
+    return dt.isoformat()
 
 def parse_as_date_only(s):
     """For all-day events, return YYYY-MM-DD."""

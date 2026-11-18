@@ -110,7 +110,7 @@ export const render = ({ output, error }) => {
             <div key={j} style={{display:'flex',alignItems:'flex-start',gap:'6px',marginBottom:'3px'}}>
               <div style={{width:'7px',height:'7px',borderRadius:'50%',background:color,flexShrink:0,marginTop:'3px'}} />
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:'600',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:'rgba(255,255,255,0.9)'}}>
+                <div style={{fontWeight:'600',overflowWrap:'anywhere',color:'rgba(255,255,255,0.9)'}}>
                   {evt.title}
                   {evt.isDayforce && <span style={{fontSize:'9px',fontWeight:'700',background:'rgba(255,159,10,0.2)',color:'#ff9f0a',padding:'0 3px',borderRadius:'3px',marginLeft:'4px'}}>B&amp;N</span>}
                 </div>
