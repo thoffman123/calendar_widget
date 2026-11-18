@@ -1,6 +1,6 @@
 # Week at a Glance — Übersicht Widget
 
-A desktop calendar widget for macOS that shows the current 7-day window of events from Apple Calendar (Google Cal + Barnes & Noble Dayforce shifts), refreshed hourly via a launchd service.
+A desktop calendar widget for macOS that shows the current 7-day window of events from Apple Calendar (including synced Google Calendar events and Barnes & Noble Dayforce shifts), refreshed hourly via a launchd service. Click an event to open it in Calendar.app.
 
 ## Files
 
@@ -8,7 +8,6 @@ A desktop calendar widget for macOS that shows the current 7-day window of event
 |------|---------|
 | `widget.jsx` | Übersicht widget — copy to Übersicht widgets folder |
 | `generate.sh` | Fetches events from Apple Calendar → writes `week-calendar.json` |
-| `week-calendar.json` | Data file read by the widget (auto-generated, do not edit) |
 | `com.tony.calendar-widget.plist` | launchd job definition (hourly schedule) |
 | `service.sh` | Service management script (enable/disable/start/stop/status) |
 
@@ -18,7 +17,7 @@ A desktop calendar widget for macOS that shows the current 7-day window of event
 ```bash
 ./service.sh run
 ```
-Runs `generate.sh` in the foreground. Should complete in a few seconds and write `week-calendar.json`.
+Runs `generate.sh` in the foreground and writes `week-calendar.json`. Calendar's AppleScript interface is slow, so this can take a few minutes.
 
 ### 2. Install the widget
 ```bash
@@ -41,7 +40,11 @@ One-off events open with the event selected. Recurring events (and any event tha
 ```bash
 ./service.sh enable
 ```
-Installs the launchd plist to `~/Library/LaunchAgents/` and starts the job. It runs immediately on load, then every hour.
+This:
+- copies `generate.sh` to `~/Library/Scripts/com.tony.calendar-widget/` (macOS blocks launchd agents from running scripts on external volumes),
+- installs the launchd plist to `~/Library/LaunchAgents/`,
+- copies `widget.jsx` into the Übersicht widgets folder,
+- starts the job. It runs immediately on load, then every hour.
 
 ## Service Management
 
@@ -57,12 +60,10 @@ Installs the launchd plist to `~/Library/LaunchAgents/` and starts the job. It r
 
 ## How It Works
 
-1. `generate.sh` uses AppleScript to query two Apple Calendar sources:
-   - **`anthonyhoffman@gmail.com`** — synced Google Calendar events
-   - **`Dayforce_barnesnoble`** — Barnes & Noble work shifts
-2. Events for the current 7-day window are parsed and written to `week-calendar.json`.
+1. `generate.sh` uses AppleScript to read events from **every** Apple Calendar calendar, skipping holiday, birthday and Siri Suggestions calendars. Events from **`Dayforce_barnesnoble`** (Barnes & Noble work shifts) are tagged and shown in orange with a B&N badge.
+2. Events for the current 7-day window are written to `~/Library/Application Support/com.tony.calendar-widget/week-calendar.json`, with times in `America/Los_Angeles` (correct PDT/PST offset per date), plus each event's uid and calendar name for click-to-open.
 3. The Übersicht widget reads the JSON via `cat` every 5 minutes and renders the week view.
-4. launchd runs `generate.sh` every hour to keep the data fresh.
+4. launchd runs the installed copy of `generate.sh` every hour to keep the data fresh.
 
 ## Updating the Widget
 
@@ -72,13 +73,20 @@ cp widget.jsx ~/Library/Application\ Support/Übersicht/widgets/week-calendar.js
 ```
 Then refresh Übersicht.
 
+If you edit `generate.sh`, reinstall it so the hourly job picks it up (or run `./service.sh enable` again):
+```bash
+cp generate.sh ~/Library/Scripts/com.tony.calendar-widget/generate.sh
+```
+
 ## Logs
 
+In `~/Library/Logs/com.tony.calendar-widget/`:
 ```
-logs/generate.log       # Script output (timestamps + event counts)
-logs/launchd.log        # stdout from launchd runs
-logs/launchd-error.log  # stderr from launchd runs
+generate.log       # Script output (timestamps + event counts)
+launchd.log        # stdout from launchd runs
+launchd-error.log  # stderr from launchd runs, e.g. "AppleEvent timed out" if Calendar hangs
 ```
+If refreshes keep timing out, quit and reopen Calendar.
 
 ## Adjusting Position
 
